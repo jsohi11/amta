@@ -1,21 +1,21 @@
 class NotificationsController < ApplicationController
 
 # Receive incoming SMS
-  def incoming
+def incoming
     # Grab the phone number from incoming Twilio params
-    @phone_number = params[:From]
+    phone_number = params[:From]
 
     # Find the subscriber associated with this number or create a new one
-    @new_subscriber = Subscriber.exists?(:phone_number => @phone_number) === false
-    @subscriber = Subscriber.first_or_create(:phone_number => @phone_number)
+    subscriber_exists = Subscriber.exists?(phone_number: phone_number)
+    subscriber = Subscriber.find_or_create_by(phone_number: phone_number)
 
-    @body = if params[:Body].nil? then '' else params[:Body].downcase end
     begin
-      if @new_subscriber
-        output = "Thanks for contacting TWBC! Text 'subscribe' if you would to receive updates via text message."
+      if subscriber_exists
+        # Process the command from our subscriber
+        body = params.fetch(:Body, '').downcase
+        output = process_message(body, subscriber)
       else
-        # Process the command from our Subscriber
-        output = process_message(@body, @subscriber)
+        output = "Thanks for contacting TWBC! Text 'subscribe' if you would to receive updates via text message."
       end
     rescue
       output = "Something went wrong. Try again."
